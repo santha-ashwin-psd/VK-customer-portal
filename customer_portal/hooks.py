@@ -156,13 +156,36 @@ update_website_context = "customer_portal.hooks_events.update_website_context"
 # Hook on document methods and events
 
 doc_events = {
-	"Issue": {
-		"before_insert": "customer_portal.hooks_events.set_customer_on_issue"
-	}
+	"Customer Support Request": {
+		"before_insert": "customer_portal.hooks_events.set_customer_on_issue",
+		"on_update": "customer_portal.notify.support_on_update",
+	},
+	"Sales Order": {
+		"after_insert": "customer_portal.notify.so_after_insert",
+		"on_submit": "customer_portal.notify.so_on_submit",
+		"on_cancel": "customer_portal.notify.so_on_cancel",
+		"on_update_after_submit": "customer_portal.notify.so_on_update_after_submit",
+	},
+	"Delivery Note": {
+		"on_submit": "customer_portal.notify.dn_on_submit",
+		"on_cancel": "customer_portal.notify.dn_on_cancel",
+	},
+	"Sales Invoice": {
+		"on_submit": "customer_portal.notify.inv_on_submit",
+		"on_cancel": "customer_portal.notify.inv_on_cancel",
+		"on_update_after_submit": "customer_portal.notify.inv_on_update_after_submit",
+	},
+	"Payment Entry": {
+		"on_submit": "customer_portal.notify.pe_on_submit",
+	},
 }
 
 # Scheduled Tasks
 # ---------------
+
+scheduler_events = {
+	"daily": ["customer_portal.notify.daily_invoice_reminders"],
+}
 
 # scheduler_events = {
 # 	"all": [
@@ -288,16 +311,17 @@ fixtures = [
 
 website_route_rules = [
     {"from_route": "/portal", "to_route": "dashboard"},
-    {"from_route": "/sales-orders", "to_route": "sales_orders"},
+    {"from_route": "/portal/sales-orders", "to_route": "sales_orders"},
     {"from_route": "/delivery-notes", "to_route": "delivery_notes"},
     {"from_route": "/my-profile", "to_route": "my_profile"},
-    {"from_route": "/invoices", "to_route": "my_invoices"},
+    {"from_route": "/portal/notifications", "to_route": "notifications"},
+    {"from_route": "/portal/invoices", "to_route": "my_invoices"},
     {"from_route": "/ledger", "to_route": "ledger"},
     {"from_route": "/support", "to_route": "support"},
-    {"from_route": "/payments", "to_route": "payments"},
+    {"from_route": "/portal/payments", "to_route": "payments"},
     {"from_route": "/new-order", "to_route": "new_order"},
     {"from_route": "/addresses", "to_route": "my_addresses"},
-    {"from_route": "/sales-orders/<name>", "to_route": "order_detail"},
+    {"from_route": "/portal/sales-orders/<name>", "to_route": "order_detail"},
     {"from_route": "/delivery-notes/<name>", "to_route": "dn_detail"},
     {"from_route": "/new-ticket", "to_route": "new_ticket"},
     {"from_route": "/tickets", "to_route": "tickets"}

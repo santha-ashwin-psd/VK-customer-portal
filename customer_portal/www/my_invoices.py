@@ -86,10 +86,23 @@ def get_context(context):
         inv.formatted_due_date = formatdate(inv.due_date, "dd MMM yyyy") if inv.due_date else "—"
         inv.is_overdue = inv.due_date and getdate(inv.due_date) < today and inv.outstanding_amount > 0 and not inv.is_return
         inv.paid_amount = paid_amt
+
+        # Map the doctype's raw status ("Submitted", "Paid", "Cancelled", ...)
+        # to the portal's own vocabulary that the badge rendering expects.
+        if inv.is_return:
+            pass  # rendered as "Credit Note" regardless of status
+        elif inv.is_overdue:
+            inv.status = "Overdue"
+        elif inv.outstanding_amount <= 0:
+            inv.status = "Paid"
+        elif inv.outstanding_amount < inv.grand_total:
+            inv.status = "Partly Paid"
+        else:
+            inv.status = "Unpaid"
         
         # order ref
         if not inv.po_no:
-            si_item = frappe.db.get_value("Sales Invoice Item", {"parent": inv.name}, "sales_order")
+            si_item = frappe.db.get_value("Sales Invoice", inv.name, "sales_order")
             inv.order_ref = si_item if si_item else "—"
         else:
             inv.order_ref = inv.po_no

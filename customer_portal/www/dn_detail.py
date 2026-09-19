@@ -34,17 +34,10 @@ def get_context(context):
     context.dn = dn
     context.formatted_date = formatdate(dn.posting_date, "dd MMM yyyy")
     
-    so_ref = None
-    for item in dn.items:
-        if item.against_sales_order:
-            so_ref = item.against_sales_order
-            break
-            
+    so_ref = dn.get("sales_order")
     context.so_ref = so_ref or "—"
     
-    if dn.lr_date:
-        context.eta = formatdate(dn.lr_date, "dd MMM yyyy")
-    elif so_ref:
+    if so_ref:
         so_delivery_date = frappe.db.get_value("Sales Order", so_ref, "delivery_date")
         context.eta = formatdate(so_delivery_date, "dd MMM yyyy") if so_delivery_date else "—"
     else:

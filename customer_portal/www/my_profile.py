@@ -38,14 +38,11 @@ def get_context(context):
     
     # Format data for display
     context.customer_since = formatdate(customer.creation, "MMM yyyy")
-    credit_limit = frappe.db.get_value("Customer Credit Limit", {"parent": customer_id}, "credit_limit") or 0
+    credit_limit = customer.credit_limit or 0
     context.credit_limit = fmt_money(credit_limit, currency=customer.default_currency or "INR")
     
     # Get additional details
-    sales_team = frappe.get_all("Sales Team", filters={"parent": customer.name, "parenttype": "Customer"}, fields=["sales_person"])
-    if sales_team:
-        context.salesman = frappe.db.get_value("Sales Person", sales_team[0].sales_person, "sales_person_name")
-    elif customer.territory:
+    if customer.territory:
         current_territory = customer.territory
         territory_manager = None
         
@@ -70,6 +67,6 @@ def get_context(context):
         context.salesman = None
         
     # Get PAN number from customer
-    context.pan_number = customer.pan or ""
+    context.pan_number = customer.tax_id or ""
 
     return context

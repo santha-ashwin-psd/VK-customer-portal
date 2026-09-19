@@ -19,7 +19,7 @@
         <div class="sidebar-brand">
             <div class="brand-logo">A</div>
             <div class="brand-text">
-                <div class="name">Atulya</div>
+                <div class="name">VK Herbals</div>
                 <div class="sub">Customer Portal</div>
             </div>
         </div>
@@ -52,16 +52,16 @@
             </a>
 
             <div class="nav-section-label">TRANSACTIONS</div>
-            <a href="/sales-orders" class="nav-item {% if pathname == '/sales-orders' %}active{% endif %}">
+            <a href="/portal/sales-orders" class="nav-item {% if pathname == '/portal/sales-orders' %}active{% endif %}">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
                     <path
                         d="M20 6h-4V4c0-1.11-.89-2-2-2h-4c-1.11 0-2 .89-2 2v2H4c-1.11 0-1.99.89-1.99 2L2 19c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V8c0-1.11-.89-2-2-2zm-6 0h-4V4h4v2z" />
                 </svg>
-                <span>Sales Orders</span>
+                <span>Purchase Orders</span>
                 {% if sales_orders_count and sales_orders_count > 0 %}<span class="nav-badge">{{ sales_orders_count
                     }}</span>{% endif %}
             </a>
-            <a href="/my_invoices" class="nav-item {% if pathname == '/invoices' %}active{% endif %}">
+            <a href="/portal/invoices" class="nav-item {% if pathname == '/portal/invoices' %}active{% endif %}">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
                     <path
                         d="M18 17H6v-2h12v2zm0-4H6v-2h12v2zm0-4H6V7h12v2zM3 22l1.5-1.5L6 22l1.5-1.5L9 22l1.5-1.5L12 22l1.5-1.5L15 22l1.5-1.5L18 22l1.5-1.5L21 22V2l-1.5 1.5L18 2l-1.5 1.5L15 2l-1.5 1.5L12 2l-1.5 1.5L9 2 7.5 3.5 6 2 4.5 3.5 3 2v20z" />
@@ -70,7 +70,7 @@
                 {% if overdue_count and overdue_count > 0 %}<span class="nav-badge">{{ overdue_count }}</span>{% endif
                 %}
             </a>
-            <a href="/payments" class="nav-item {% if pathname == '/payments' %}active{% endif %}">
+            <a href="/portal/payments" class="nav-item {% if pathname == '/portal/payments' %}active{% endif %}">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
                     <path
                         d="M20 4H4c-1.11 0-1.99.89-1.99 2L2 18c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V6c0-1.11-.89-2-2-2zm0 14H4v-6h16v6zm0-10H4V6h16v2z" />
@@ -92,7 +92,7 @@
             </a>
 
             <div class="nav-section-label">ACCOUNT</div>
-            <a href="/notifications" class="nav-item {% if pathname == '/notifications' %}active{% endif %}">
+            <a href="/portal/notifications" class="nav-item {% if pathname == '/portal/notifications' %}active{% endif %}">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
                     <path
                         d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.63-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.64 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z" />
@@ -101,19 +101,12 @@
                 {% if notification_count and notification_count > 0 %}<span class="nav-badge">{{ notification_count
                     }}</span>{% endif %}
             </a>
-            <a href="/my_addresses" class="nav-item {% if pathname == '/addresses' %}active{% endif %}">
+            <a href="/addresses" class="nav-item {% if pathname == '/addresses' %}active{% endif %}">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
                     <path
                         d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" />
                 </svg>
                 <span>Addresses</span>
-            </a>
-            <a href="/support" class="nav-item {% if pathname == '/support' %}active{% endif %}">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                    <path
-                        d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17h-2v-2h2v2zm2.07-7.75-.9.92C13.45 12.9 13 13.5 13 15h-2v-.5c0-1.1.45-2.1 1.17-2.83l1.24-1.26c.37-.36.59-.86.59-1.41 0-1.1-.9-2-2-2s-2 .9-2 2H8c0-2.21 1.79-4 4-4s4 1.79 4 4c0 .88-.36 1.68-.93 2.25z" />
-                </svg>
-                <span>Support</span>
             </a>
             <a href="/my-profile" class="nav-item {% if pathname == '/my-profile' %}active{% endif %}">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
@@ -150,7 +143,7 @@
                 {% endif %}
             </div>
             <div class="topbar-actions" style="gap: 20px;">
-                <div class="icon-btn" onclick="window.location.href='/notifications'" style="cursor: pointer;">
+                <div class="icon-btn" onclick="window.location.href='/portal/notifications'" style="cursor: pointer;">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
                         <path
                             d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.63-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.64 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z" />
@@ -188,9 +181,9 @@
                 if (!val) return;
                 
                 if (val.toUpperCase().startsWith('INV') || val.toUpperCase().startsWith('SINV')) {
-                    window.location.href = '/my_invoices?search=' + encodeURIComponent(val);
+                    window.location.href = '/portal/invoices?search=' + encodeURIComponent(val);
                 } else {
-                    window.location.href = '/sales-orders?search=' + encodeURIComponent(val);
+                    window.location.href = '/portal/sales-orders?search=' + encodeURIComponent(val);
                 }
             }
         }

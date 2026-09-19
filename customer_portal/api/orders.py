@@ -1,4 +1,5 @@
 import frappe
+from frappe.utils import flt
 from .dashboard import _get_customer
 
 @frappe.whitelist()
@@ -32,32 +33,50 @@ def search_items(query=""):
 
 @frappe.whitelist()
 def get_item_details(item_code):
-    cust = _get_customer() # Security check
-    item = frappe.get_doc("Item", item_code)
-    
-    # Get Customer Default Price List
-    price_list = frappe.db.get_value("Customer", cust, "default_price_list")
-    if not price_list:
-        price_list = frappe.db.get_value("Selling Settings", None, "selling_price_list")
-        
-    rate = 0
-    if price_list:
-        rate = frappe.db.get_value("Item Price", {"item_code": item_code, "price_list": price_list, "selling": 1}, "price_list_rate") or 0
-        
-    if not rate:
-        # Fallback to any selling price
-        rate = frappe.db.get_value("Item Price", {"item_code": item_code, "selling": 1}, "price_list_rate") or 0
-        
-    if not rate:
-        # Fallback to standard rate if available on Item
-        rate = getattr(item, "standard_rate", 0)
+    _get_customer() # Security check
+
+    item_code, item_name, description, uom, rate, tax_code = frappe.db.get_value(
+        "Item", item_code, ["item_code", "item_name", "description", "stock_uom", "standard_rate", "tax_code"]
+    )
+
+    tax_rate = 0
+    if tax_code:
+        tmpl = frappe.get_doc("Tax Template", tax_code)
+        tax_rate = _tax_template_headline_rate(tmpl.taxes)
 
     return {
-        "item_code": item.item_code,
-        "description": item.description or item.item_name,
-        "uom": item.stock_uom,
-        "rate": rate
+        "item_code": item_code,
+        "description": description or item_name,
+        "uom": uom,
+        "rate": flt(rate),
+        "tax_rate": flt(tax_rate),
     }
+def _tax_type_from_code(tax_code):
+    """Best-effort Tax Line tax_type, guessed from the template name — same
+    heuristic SalesOrders.vue uses (taxMap) since Tax Template names carry no
+    separate structured type of their own beyond CGST/SGST/IGST/CESS/Other."""
+    up = (tax_code or "").upper()
+    if up.startswith("CGST"): return "CGST"
+    if up.startswith("SGST"): return "SGST"
+    if up.startswith("IGST"): return "IGST"
+    if up.startswith("CESS"): return "Cess"
+    return "Other"
+
+
+def _tax_template_headline_rate(rows):
+    """Mirrors templateHeadlineRate() in useTaxCalc.js: same-state
+    (CGST+SGST+UTGST+CESS) total if present, else inter-state (IGST+CESS)
+    total, else the sum of every row the template defines."""
+    def _sum(components):
+        return round(sum(flt(r.rate) for r in rows if (r.tax_type or "").upper() in components), 2)
+    intra = _sum({"CGST", "SGST", "UTGST", "CESS"})
+    if intra:
+        return intra
+    inter = _sum({"IGST", "CESS"})
+    if inter:
+        return inter
+    return round(sum(flt(r.rate) for r in rows), 2)
+
 
 @frappe.whitelist()
 def place_order(order_data, save_draft=0):
@@ -67,13 +86,14 @@ def place_order(order_data, save_draft=0):
     if customer_doc.get("is_account_locked"):
         frappe.throw(f"Your account is currently locked ({customer_doc.get('lock_reason') or 'Policy Violation'}). Please contact support to place new orders.")
         
-    # Check if the customer has any credit limit defined. If not, force save as draft for commercial credit check.
-    has_credit_limit = False
-    for cl in customer_doc.get("credit_limits", []):
-        if cl.credit_limit and float(cl.credit_limit) > 0:
-            has_credit_limit = True
-            break
-            
+    # Check if the customer has a credit limit set. If not, force save as
+    # draft for commercial credit check. Customer only has a single
+    # `credit_limit` Currency field in this app — there's no
+    # "credit_limits" child table (that was a leftover from a different
+    # schema and returned None here, not an empty list, so the old loop
+    # over customer_doc.get("credit_limits", []) crashed with a TypeError).
+    has_credit_limit = flt(customer_doc.get("credit_limit")) > 0
+
     if not has_credit_limit:
         save_draft = 1
     
@@ -82,16 +102,33 @@ def place_order(order_data, save_draft=0):
         
     so = frappe.new_doc("Sales Order")
     so.customer = cust
+
+    # Sales Order.company is a required field, but Customer has no native
+    # "company" link — this app scopes Customer/Supplier/Item/Contact to a
+    # Books Company via the custom `books_company` field (seeded in
+    # install.py, see utils/tenancy.py). Records created before that field
+    # existed can legitimately have it blank (tenancy.py's own permission
+    # queries tolerate NULL/legacy Customers for the same reason), so we
+    # can't hard-fail here — fall back to the site's default/sole Books
+    # Company exactly like auto_stamp_books_company does, and backfill the
+    # Customer so this only needs resolving once per legacy record.
+    company = customer_doc.get("books_company")
+    if not company:
+        from zoho_books_clone.utils.tenancy import _default_books_company
+        company = _default_books_company()
+        if company:
+            customer_doc.db_set("books_company", company, update_modified=False)
+    if not company:
+        frappe.throw(
+            "Your account isn't linked to a company yet. Please contact support."
+        )
+    so.company = company
+
     so.transaction_date = order_data.get("order_date")
     so.delivery_date = order_data.get("expected_delivery")
     so.customer_address = order_data.get("billing_address")
     so.shipping_address_name = order_data.get("shipping_address")
-    
-    # Dynamically fetch the default taxes and charges template
-    default_tax_template = frappe.db.get_value("Sales Taxes and Charges Template", {"is_default": 1})
-    if default_tax_template:
-        so.taxes_and_charges = default_tax_template
-    
+
     for item in order_data.get("items", []):
         if not item.get("item_code") or not float(item.get("qty", 0)):
             continue
@@ -104,6 +141,34 @@ def place_order(order_data, save_draft=0):
         
     if not so.get("items"):
         frappe.throw("Please add at least one valid item.")
+
+    # Sales Order has no "taxes_and_charges" template field — that's an
+    # ERPNext concept and "Sales Taxes and Charges Template" isn't a doctype
+    # in this app at all. Tax instead comes from directly-appended `taxes`
+    # (Tax Line) rows, whose `rate` the Sales Order controller applies to the
+    # net total (see sales_order.py). Build one Tax Line per distinct Tax
+    # Template used by the ordered items' Item.tax_code, exactly the way the
+    # internal Books Sales Order screen does it (SalesOrders.vue: taxMap /
+    # templateHeadlineRate) — same-state (CGST+SGST) total when the template
+    # has those components, else the inter-state (IGST) total, else the sum
+    # of whatever rows it defines.
+    tax_codes = {frappe.db.get_value("Item", row.item_code, "tax_code") for row in so.items}
+    tax_codes.discard(None)
+    tax_codes.discard("")
+
+    for tax_code in tax_codes:
+        tmpl = frappe.get_doc("Tax Template", tax_code)
+        if tmpl.disabled:
+            continue
+        rate = _tax_template_headline_rate(tmpl.taxes)
+        if not rate:
+            continue
+        so.append("taxes", {
+            "tax_type": _tax_type_from_code(tax_code),
+            "description": tax_code,
+            "rate": rate,
+            "account_head": tmpl.taxes[0].account_head if tmpl.taxes else None,
+        })
         
     so.insert(ignore_permissions=True)
     

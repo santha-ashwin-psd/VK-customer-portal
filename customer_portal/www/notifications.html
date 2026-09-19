@@ -8,13 +8,13 @@
         <div>
             <h2 style="font-size: 18px; font-weight: 700; color: var(--neutral-800); margin: 0 0 2px 0; line-height: 1.2;">Notifications</h2>
         </div>
-        <button class="btn btn-secondary btn-sm" onclick="frappe.call({method: 'frappe.desk.doctype.notification_log.notification_log.mark_all_as_read', callback: function(r){ location.reload(); }})">Mark All Read</button>
+        <div style="display:flex;gap:8px;"><button class="btn btn-secondary btn-sm" onclick="frappe.call({method: 'frappe.desk.doctype.notification_log.notification_log.mark_all_as_read', callback: function(r){ location.reload(); }})">Mark All Read</button><button class="btn btn-secondary btn-sm" id="del-read-btn">Delete Read</button></div>
     </div>
 
     <div class="notif-list">
         {% if notifications %}
             {% for n in notifications %}
-            <div class="notif-item">
+            <div class="notif-item notif-clickable{% if n.read %} is-read{% endif %}" data-name="{{ n.name }}" tabindex="0" role="button">
                 <div class="notif-icon {% if not n.read %}ni-blue{% else %}ni-gray{% endif %}" {{ 'style="color: #94a3b8; background-color: #f1f5f9;"' if n.read else '' }}>
                     {% if n.type == 'Email' %}
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="20" height="20">
@@ -40,6 +40,9 @@
                 {% if not n.read %}
                 <div class="notif-unread-dot"></div>
                 {% endif %}
+                <button type="button" class="notif-del" title="Delete notification" aria-label="Delete notification">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="16" height="16"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
+                </button>
             </div>
             {% endfor %}
         {% else %}
@@ -49,4 +52,123 @@
         {% endif %}
     </div>
 </div>
+
+<style>
+.notif-del { display:none; margin-left:auto; align-self:center; background:none; border:0; padding:6px; border-radius:6px; color:#94a3b8; cursor:pointer; }
+.notif-del:hover { background:#fee2e2; color:#dc2626; }
+.notif-clickable.is-read .notif-del { display:inline-flex; }
+.notif-clickable { cursor: pointer; transition: background .15s; }
+.notif-clickable:hover { background: var(--neutral-50, #f8fafc); }
+.notif-clickable.is-read .nb-title { font-weight: 500; color: var(--neutral-600, #475569); }
+#notif-modal-bg { display:none; position:fixed; inset:0; background:rgba(15,23,42,.45); z-index:2000; align-items:center; justify-content:center; padding:16px; }
+#notif-modal-bg.open { display:flex; }
+#notif-modal { background:#fff; border-radius:12px; width:100%; max-width:460px; box-shadow:0 20px 50px rgba(0,0,0,.25); overflow:hidden; }
+#notif-modal .nm-head { padding:18px 20px 8px; display:flex; justify-content:space-between; gap:12px; }
+#notif-modal .nm-title { font-size:15px; font-weight:700; color:var(--neutral-800,#1e293b); margin:0; line-height:1.4; }
+#notif-modal .nm-time { font-size:12px; color:var(--neutral-500,#64748b); padding:0 20px 10px; }
+#notif-modal .nm-close { background:none; border:0; font-size:22px; line-height:1; cursor:pointer; color:#64748b; }
+#notif-modal .nm-body { padding:4px 20px 14px; }
+#notif-modal .nm-msg { font-size:13px; color:var(--neutral-600,#475569); margin-bottom:10px; }
+#notif-modal .nm-row { display:flex; justify-content:space-between; gap:16px; padding:8px 0; border-top:1px solid var(--neutral-100,#f1f5f9); font-size:13px; }
+#notif-modal .nm-row span:first-child { color:var(--neutral-500,#64748b); }
+#notif-modal .nm-row span:last-child { font-weight:600; color:var(--neutral-800,#1e293b); text-align:right; }
+#notif-modal .nm-foot { padding:12px 20px 18px; display:flex; justify-content:flex-end; gap:8px; }
+</style>
+
+<div id="notif-modal-bg">
+  <div id="notif-modal" role="dialog" aria-modal="true">
+    <div class="nm-head"><h3 class="nm-title" id="nm-title"></h3><button class="nm-close" id="nm-close" aria-label="Close">&times;</button></div>
+    <div class="nm-time" id="nm-time"></div>
+    <div class="nm-body" id="nm-body"></div>
+    <div class="nm-foot"><button class="btn btn-secondary btn-sm" id="nm-close2">Close</button><a class="btn btn-primary btn-sm" id="nm-link" style="display:none"></a></div>
+  </div>
+</div>
+
+<script>
+(function () {
+  var bg = document.getElementById('notif-modal-bg');
+  function closeModal() { bg.classList.remove('open'); }
+  document.getElementById('nm-close').onclick = closeModal;
+  document.getElementById('nm-close2').onclick = closeModal;
+  bg.addEventListener('click', function (e) { if (e.target === bg) closeModal(); });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeModal(); });
+
+  function setUnreadUI(count) {
+    var badge = document.querySelector('.nav-badge');
+    if (badge) { if (count > 0) badge.textContent = count; else badge.remove(); }
+    var dot = document.querySelector('.icon-btn .notif-dot');
+    if (dot && count <= 0) dot.remove();
+  }
+
+  function show(r) {
+    document.getElementById('nm-title').textContent = r.subject || r.docname || 'Notification';
+    document.getElementById('nm-time').textContent = r.time || '';
+    var body = document.getElementById('nm-body');
+    body.innerHTML = '';
+    if (r.message) { var m = document.createElement('div'); m.className = 'nm-msg'; m.textContent = r.message; body.appendChild(m); }
+    (r.rows || []).forEach(function (row) {
+      var d = document.createElement('div'); d.className = 'nm-row';
+      var a = document.createElement('span'); a.textContent = row.label;
+      var b = document.createElement('span'); b.textContent = row.value;
+      d.appendChild(a); d.appendChild(b); body.appendChild(d);
+    });
+    if (!r.rows || !r.rows.length) {
+      var e = document.createElement('div'); e.className = 'nm-msg';
+      e.textContent = r.docname ? (r.doctype + ' ' + r.docname) : '';
+      body.appendChild(e);
+    }
+    var link = document.getElementById('nm-link');
+    if (r.link) { link.href = r.link; link.target = r.new_tab ? '_blank' : '_self'; link.textContent = r.link_label || 'View'; link.style.display = ''; }
+    else { link.style.display = 'none'; }
+    bg.classList.add('open');
+  }
+
+  function openItem(item) {
+    frappe.call({
+      method: 'customer_portal.api.notifications.open_notification',
+      args: { name: item.dataset.name },
+      callback: function (res) {
+        var r = res.message; if (!r) return;
+        var dot = item.querySelector('.notif-unread-dot'); if (dot) dot.remove();
+        var icon = item.querySelector('.notif-icon');
+        if (icon) { icon.classList.remove('ni-blue'); icon.classList.add('ni-gray'); icon.style.color = '#94a3b8'; icon.style.backgroundColor = '#f1f5f9'; }
+        item.classList.add('is-read');
+        setUnreadUI(r.unread_count);
+        show(r);
+      }
+    });
+  }
+
+  document.querySelectorAll('.notif-clickable').forEach(function (item) {
+    item.addEventListener('click', function () { openItem(item); });
+    item.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openItem(item); } });
+  });
+  function checkEmpty() {
+    if (!document.querySelector('.notif-clickable')) {
+      var list = document.querySelector('.notif-list');
+      if (list) list.innerHTML = '<div style="padding: 2rem; text-align: center; color: var(--neutral-500);">No notifications yet.</div>';
+    }
+  }
+  document.querySelectorAll('.notif-del').forEach(function (btn) {
+    btn.addEventListener('keydown', function (e) { e.stopPropagation(); });
+    btn.addEventListener('click', function (e) {
+      e.stopPropagation(); e.preventDefault();
+      var item = btn.closest('.notif-clickable');
+      frappe.call({
+        method: 'customer_portal.api.notifications.delete_notification',
+        args: { name: item.dataset.name },
+        callback: function (res) { if (res.message) { item.remove(); checkEmpty(); } }
+      });
+    });
+  });
+  var delRead = document.getElementById('del-read-btn');
+  if (delRead) delRead.addEventListener('click', function () {
+    if (!confirm('Delete all read notifications?')) return;
+    frappe.call({
+      method: 'customer_portal.api.notifications.delete_read_notifications',
+      callback: function () { location.reload(); }
+    });
+  });
+})();
+</script>
 {% endblock %}

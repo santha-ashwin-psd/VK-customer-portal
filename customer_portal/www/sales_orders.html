@@ -1,6 +1,6 @@
 {% extends "customer_portal/templates/portal_base.html" %}
 
-{% block portal_title %}Sales Orders{% endblock %}
+{% block portal_title %}Purchase Orders{% endblock %}
 
 {% block page_content %}
 <div class="sales-orders-page">
@@ -8,8 +8,8 @@
         <div>
             <h2
                 style="font-size: 18px; font-weight: 700; color: var(--neutral-800); margin: 0 0 2px 0; line-height: 1.2;">
-                Sales Orders</h2>
-            <div style="font-size: 12px; color: var(--neutral-400);">Track all your orders with Atulya</div>
+                Purchase Orders</h2>
+            <div style="font-size: 12px; color: var(--neutral-400);">Track all your orders with VK Herbals</div>
         </div>
         <div style="display: flex; gap: 8px;">
             <button onclick="window.print()" class="btn-sm"
@@ -68,13 +68,13 @@
                 {% if orders %}
                 {% for order in orders %}
                 <tr>
-                    <td><a href="/sales-orders/{{ order.name }}" class="so-link">{{ order.name }}</a></td>
+                    <td><a href="/portal/sales-orders/{{ order.name }}" class="so-link">{{ order.name }}</a></td>
                     <td>{{ order.formatted_date }}</td>
                     <td>{{ order.items_count }}</td>
                     <td>{{ frappe.utils.fmt_money(order.grand_total, currency=order.currency) }}</td>
                     <td>
                         {% if order.invoice_name != "—" %}
-                        <a href="/invoices/{{ order.invoice_name }}" class="so-ref-link">{{ order.invoice_name }}</a>
+                        <a href="/portal/payments?invoice={{ order.invoice_name }}" class="so-ref-link">{{ order.invoice_name }}</a>
                         {% else %}
                         —
                         {% endif %}
@@ -102,13 +102,13 @@
                         <span class="badge badge-pending">{{ order.status }}</span>
                         {% endif %}
                     </td>
-                    <td><a href="/sales-orders/{{ order.name }}" class="btn-view" style="padding: 4px 10px;" title="View"><i class="fa-solid fa-eye"></i></a></td>
+                    <td><a href="/portal/sales-orders/{{ order.name }}" class="btn-view" style="padding: 4px 10px;" title="View"><i class="fa-solid fa-eye"></i></a></td>
                 </tr>
                 {% endfor %}
                 {% else %}
                 <tr>
                     <td colspan="8" style="text-align: center; padding: 40px 0; color: #888;">
-                        <h4>No Sales Orders Found</h4>
+                        <h4>No Purchase Orders Found</h4>
                         <p>You have not placed any orders yet.</p>
                     </td>
                 </tr>

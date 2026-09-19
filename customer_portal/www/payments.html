@@ -31,7 +31,7 @@
                         <tr class="unpaid-inv-row" {% if loop.index > 4 %}style="display: none;"{% endif %}>
                             <td><input type="checkbox" checked /></td>
                             <td>
-                                <a href="/invoices/{{ inv.name }}" class="link">{{ inv.name }}</a>
+                                <a href="/portal/payments?invoice={{ inv.name }}" class="link">{{ inv.name }}</a>
                                 <div {{ 'style="font-size:10.5px;color:' ~ inv.status_color ~ '"' }}>{{ inv.display_status }}
                                 </div>
                             </td>

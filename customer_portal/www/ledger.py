@@ -39,7 +39,7 @@ def get_context(context):
     elif to_date:
         filters["posting_date"] = ["<=", to_date]
         
-    context.total_count = frappe.db.count("GL Entry", filters=filters)
+    context.total_count = frappe.db.count("General Ledger Entry", filters=filters)
     
     # Get ledger data
     ledger_entries = get_ledger_entries(customer, from_date, to_date, limit=limit + 1)
@@ -121,7 +121,7 @@ def get_ledger_entries(customer, from_date=None, to_date=None, limit=50):
     elif to_date:
         filters["posting_date"] = ["<=", to_date]
     
-    entries = frappe.get_all("GL Entry",
+    entries = frappe.get_all("General Ledger Entry",
         filters=filters,
         fields=["name", "posting_date", "account", "debit", "credit", "voucher_no", "voucher_type"],
         order_by="posting_date desc, name desc",

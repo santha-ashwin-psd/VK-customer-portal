@@ -19,7 +19,7 @@ def get_context(context):
         if so.customer != context.customer_id:
             frappe.throw("Not Authorized", frappe.PermissionError)
             
-        advance_paid = flt(so.advance_paid)
+        advance_paid = flt(so.get("advance_paid"))
         outstanding = flt(so.grand_total) - advance_paid
         
         invoices.append(frappe._dict({
@@ -93,17 +93,18 @@ def get_context(context):
     if company:
         bank_accts = frappe.get_all(
             "Bank Account",
-            filters={"company": company, "is_company_account": 1},
-            fields=["name", "account_name", "account", "bank", "bank_account_no", "branch_code"]
+            filters={"company": company},
+            fields=["name", "account_name", "gl_account", "bank_name", "account_number", "branch", "ifsc_code"]
         )
         for ba in bank_accts:
-            bank_doc = frappe.get_doc("Bank", ba.bank) if ba.bank else None
-            ba.bank_name = bank_doc.bank_name if bank_doc else ""
-            ba.ifsc_code = ba.get("ifsc_code") or getattr(bank_doc, "ifsc_code", "") or getattr(bank_doc, "swift_number", "") or ""
-            ba.branch_code = ba.branch_code or ""
+            ba.account = ba.get("gl_account") or ""
+            ba.bank = ba.get("bank_name") or ""
+            ba.bank_account_no = ba.get("account_number") or ""
+            ba.branch_code = ba.get("branch") or ""
+            ba.ifsc_code = ba.get("ifsc_code") or ""
 
         context.bank_accounts = bank_accts
-        context.company_currency = frappe.get_value("Company", company, "default_currency") or "INR"
+        context.company_currency = frappe.db.get_single_value("Books Settings", "default_currency") or "INR"
 
     
     # Also fetch recent Payment Entries for Payment History
@@ -120,8 +121,8 @@ def get_context(context):
     payment_entries = frappe.get_all(
         "Payment Entry",
         filters=payment_filters,
-        fields=["name", "posting_date", "reference_no", "paid_amount", "status"],
-        order_by="posting_date desc",
+        fields=["name", "payment_date", "reference_no", "paid_amount"],
+        order_by="payment_date desc",
         limit_page_length=history_limit + 1
     )
     
@@ -130,10 +131,10 @@ def get_context(context):
         payment_entries = payment_entries[:history_limit]
     
     for pe in payment_entries:
-        pe.formatted_date = formatdate(pe.posting_date, "dd MMM yy")
+        pe.formatted_date = formatdate(pe.payment_date, "dd MMM yy")
         pe.amount_formatted = frappe.utils.fmt_money(pe.paid_amount, precision=0)
         pe.ref_label = pe.reference_no if pe.reference_no else pe.name
-        pe.status_label = "Cleared" if pe.status == "Submitted" else pe.status
+        pe.status_label = "Cleared"
         
     context.payment_history = payment_entries
 

@@ -47,7 +47,7 @@ def get_context(context):
             "Delivery Note",
             filters=filters,
             or_filters=or_filters,
-            fields=["name", "posting_date", "transporter", "lr_no", "status", "lr_date"],
+            fields=["name", "posting_date", "transporter_name", "lr_no", "status", "sales_order"],
             order_by="posting_date desc",
             limit_page_length=limit + 1
         )
@@ -56,7 +56,7 @@ def get_context(context):
         delivery_notes = frappe.get_all(
             "Delivery Note",
             filters=filters,
-            fields=["name", "posting_date", "transporter", "lr_no", "status", "lr_date"],
+            fields=["name", "posting_date", "transporter_name", "lr_no", "status", "sales_order"],
             order_by="posting_date desc",
             limit_page_length=limit + 1
         )
@@ -72,14 +72,15 @@ def get_context(context):
         items_count = frappe.db.count("Delivery Note Item", {"parent": dn.name})
         dn.total_items = f"{items_count} items"
 
+        # Alias for template compatibility
+        dn.transporter = dn.get("transporter_name") or ""
+
         # Get Sales Order reference
-        so_ref = frappe.db.get_value("Delivery Note Item", {"parent": dn.name}, "against_sales_order")
+        so_ref = dn.get("sales_order")
         dn.order_ref = so_ref if so_ref else "—"
 
-        # Set ETA based on lr_date or Sales Order delivery_date
-        if dn.lr_date:
-            dn.eta = formatdate(dn.lr_date, "dd MMM yyyy")
-        elif so_ref:
+        # Set ETA based on Sales Order delivery_date
+        if so_ref:
             so_delivery_date = frappe.db.get_value("Sales Order", so_ref, "delivery_date")
             dn.eta = formatdate(so_delivery_date, "dd MMM yyyy") if so_delivery_date else "—"
         else:

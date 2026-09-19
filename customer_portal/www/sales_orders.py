@@ -1,10 +1,11 @@
 import frappe
 from frappe.utils import formatdate
 from .get_base_context import get_base_context
+from .order_status import portal_order_status
 
 def get_context(context):
     context = get_base_context(context)
-    context.title = "Sales Orders"
+    context.title = "Purchase Orders"
 
     # Filters
     search_q = frappe.form_dict.get("search", "")
@@ -48,7 +49,7 @@ def get_context(context):
             "Sales Order",
             filters=filters,
             or_filters=or_filters,
-            fields=["name", "transaction_date", "status", "grand_total", "currency", "docstatus", "workflow_state"],
+            fields=["name", "transaction_date", "status", "grand_total", "currency", "docstatus"],
             order_by="transaction_date desc, name desc",
             limit_page_length=limit + 1,
             ignore_permissions=True
@@ -58,7 +59,7 @@ def get_context(context):
         orders = frappe.get_all(
             "Sales Order",
             filters=filters,
-            fields=["name", "transaction_date", "status", "grand_total", "currency", "docstatus", "workflow_state"],
+            fields=["name", "transaction_date", "status", "grand_total", "currency", "docstatus"],
             order_by="transaction_date desc, name desc",
             limit_page_length=limit + 1,
             ignore_permissions=True
@@ -71,22 +72,18 @@ def get_context(context):
     for order in orders:
         order.formatted_date = formatdate(order.transaction_date, "dd MMM yyyy")
         
-        if order.docstatus == 0:
-            if order.get("workflow_state") == "Draft":
-                order.status = "Draft"
-            else:
-                order.status = "Pending Approval"
+        order.status = portal_order_status(order)
         
         # count items
         items_count = frappe.db.count("Sales Order Item", {"parent": order.name})
         order.items_count = items_count
 
         # fetch related invoice
-        invoice = frappe.db.get_value("Sales Invoice Item", {"sales_order": order.name}, "parent")
+        invoice = frappe.db.get_value("Sales Invoice", {"sales_order": order.name}, "name")
         order.invoice_name = invoice if invoice else "—"
 
         # fetch related delivery
-        delivery = frappe.db.get_value("Delivery Note Item", {"against_sales_order": order.name}, "parent")
+        delivery = frappe.db.get_value("Delivery Note", {"sales_order": order.name}, "name")
         order.delivery_name = delivery if delivery else "—"
 
     context.orders = orders

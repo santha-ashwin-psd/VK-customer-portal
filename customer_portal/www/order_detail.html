@@ -6,7 +6,7 @@
 <div class="order-detail-page">
     <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 24px;">
         <div>
-            <a href="/sales-orders"
+            <a href="/portal/sales-orders"
                 style="display: inline-flex; align-items: center; color: var(--neutral-500); font-size: 13px; text-decoration: none; margin-bottom: 12px; border: 1px solid var(--neutral-200); padding: 4px 12px; border-radius: 100px; background: #fff;">
                 <i class="fa-solid fa-arrow-left" style="margin-right: 6px; font-size: 11px;"></i> Back to Orders
             </a>
@@ -57,9 +57,9 @@
                 PDF</a>
             {% if not is_paid %}
                 {% if invoice_name %}
-                <a href="/payments?invoice={{ invoice_name }}" class="btn-sm" style="background: var(--primary); padding: 8px 16px; font-size: 12.5px; font-weight: 500; border: none; border-radius: 6px; color: #fff; text-decoration: none;">Pay Invoice</a>
+                <a href="/portal/payments?invoice={{ invoice_name }}" class="btn-sm" style="background: var(--primary); padding: 8px 16px; font-size: 12.5px; font-weight: 500; border: none; border-radius: 6px; color: #fff; text-decoration: none;">Pay Invoice</a>
                 {% else %}
-                <a href="/payments?order={{ order.name }}" class="btn-sm" style="background: var(--primary); padding: 8px 16px; font-size: 12.5px; font-weight: 500; border: none; border-radius: 6px; color: #fff; text-decoration: none;">Pay Advance</a>
+                <a href="/portal/payments?order={{ order.name }}" class="btn-sm" style="background: var(--primary); padding: 8px 16px; font-size: 12.5px; font-weight: 500; border: none; border-radius: 6px; color: #fff; text-decoration: none;">Pay Advance</a>
                 {% endif %}
             {% endif %}
         </div>
@@ -85,7 +85,7 @@
                 <div style="font-size: 13px; color: var(--neutral-600);">Invoice</div>
                 <div style="font-size: 13px; color: var(--primary); font-weight: 500; text-align: right;">
                     {% if invoice_name %}
-                    <a href="/invoices/{{ invoice_name }}" style="color: var(--primary); text-decoration: none;">{{
+                    <a href="/portal/payments?invoice={{ invoice_name }}" style="color: var(--primary); text-decoration: none;">{{
                         invoice_name }}</a>
                     {% else %}
                     <span style="color: var(--neutral-400); font-style: italic;">Pending Generation</span>
@@ -190,7 +190,7 @@
                     </tr>
                     <tr style="border: none;">
                         <td colspan="3" style="border: none; padding: 0;"></td>
-                        <td style="padding: 4px 24px 16px 24px; font-size: 13px; color: var(--neutral-600);">GST (18%)</td>
+                        <td style="padding: 4px 24px 16px 24px; font-size: 13px; color: var(--neutral-600);">GST ({{ tax_rate_display }})</td>
                         <td style="padding: 4px 24px 16px 24px; font-size: 13px; color: var(--neutral-800); text-align: right;">{{ formatted_total_taxes }}</td>
                     </tr>
                     <tr>
@@ -283,7 +283,7 @@
 
                 <!-- Node 4: In Transit -->
                 <div style="position: relative; z-index: 1; display: flex; gap: 16px; margin-bottom: 24px;">
-                    {% if timeline.get("dispatched_date") and order.status not in ["Delivered", "Completed"] %}
+                    {% if timeline.get("dispatched_date") and order.status not in ["Delivered", "Completed", "Invoiced", "Closed"] %}
                     <div
                         style="width: 14px; height: 14px; border-radius: 50%; background: #fff; border: 2px solid #f59e0b; flex-shrink: 0; display: flex; align-items: center; justify-content: center; margin-top: 2px; box-shadow: 0 0 0 4px #fff; box-sizing: border-box;">
                         <div style="width: 6px; height: 6px; border-radius: 50%; background: #f59e0b;"></div>
@@ -295,7 +295,7 @@
                         <div style="font-size: 12px; color: var(--neutral-500);">Since {{ timeline.dispatched_date }}
                         </div>
                     </div>
-                    {% elif order.status in ["Delivered", "Completed"] %}
+                    {% elif order.status in ["Delivered", "Completed", "Invoiced", "Closed"] %}
                     <div
                         style="width: 14px; height: 14px; border-radius: 50%; background: #22c55e; flex-shrink: 0; display: flex; align-items: center; justify-content: center; margin-top: 2px; box-shadow: 0 0 0 4px #fff;">
                         <i class="fa-solid fa-check" style="color: #fff; font-size: 8px;"></i>
@@ -319,7 +319,7 @@
 
                 <!-- Node 5: Delivered -->
                 <div style="position: relative; z-index: 1; display: flex; gap: 16px;">
-                    {% if order.status in ["Delivered", "Completed"] %}
+                    {% if order.status in ["Delivered", "Completed", "Invoiced", "Closed"] %}
                     <div
                         style="width: 14px; height: 14px; border-radius: 50%; background: #22c55e; flex-shrink: 0; display: flex; align-items: center; justify-content: center; margin-top: 2px; box-shadow: 0 0 0 4px #fff;">
                         <i class="fa-solid fa-check" style="color: #fff; font-size: 8px;"></i>
@@ -413,7 +413,7 @@
                 if (!r.exc) {
                     closeRejectModal();
                     frappe.show_alert({ message: "Order Rejected!", indicator: "red" });
-                    setTimeout(() => window.location.href = "/sales-orders", 1000);
+                    setTimeout(() => window.location.href = "/portal/sales-orders", 1000);
                 }
             }
         });

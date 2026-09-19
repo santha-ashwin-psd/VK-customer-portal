@@ -8,7 +8,7 @@ def get_base_context(context):
         raise frappe.Redirect
 
     context.no_cache = 1
-    context.title = "Customer Portal - Atulya Electrical"
+    context.title = "Customer Portal - VK Herbals"
     
     user_doc = frappe.get_doc("User", user)
     context.user_name = user_doc.full_name
@@ -54,9 +54,12 @@ def get_base_context(context):
         FROM `tabSales Invoice`
         WHERE customer = %s AND docstatus = 1 AND outstanding_amount > 0
     """, (nowdate(), nowdate(), cust), as_dict=True)[0]
-    company = frappe.db.get_single_value("Global Defaults", "default_company")
+    company = frappe.db.get_single_value("Books Settings", "default_company")
     
-    limit_info = frappe.db.get_value("Customer Credit Limit", {"parent": cust, "company": company}, ["credit_limit", "bypass_credit_limit_check"], as_dict=True) or {}
+    try:
+        limit_info = frappe.db.get_value("Customer Credit Limit", {"parent": cust, "company": company}, ["credit_limit", "bypass_credit_limit_check"], as_dict=True) or {}
+    except Exception:
+        limit_info = {}
     
     credit_limit = flt(limit_info.get("credit_limit"))
     ignore_so = limit_info.get("bypass_credit_limit_check", 0)
@@ -71,7 +74,7 @@ def get_base_context(context):
     util_pct = (outstanding / credit_limit * 100) if credit_limit else 0
     
     sales = frappe.db.sql("""
-        SELECT SUM(base_grand_total)
+        SELECT SUM(grand_total)
         FROM `tabSales Order`
         WHERE customer = %s AND docstatus = 1
           AND MONTH(transaction_date) = MONTH(CURDATE())
@@ -79,7 +82,7 @@ def get_base_context(context):
     """, cust)[0][0] or 0
     
     # Fetch sales target from a custom field on Customer, fallback to 500000 if not set
-    sales_target = flt(frappe.db.get_value("Customer", cust, "dealer_monthly_target"))
+    sales_target = flt(frappe.db.get_value("Customer", cust, "dealer_monthly_target")) if frappe.db.has_column("Customer", "dealer_monthly_target") else 500000
     achievement_pct = min((sales / sales_target * 100) if sales_target else 0, 100)
     
     context.total_outstanding = outstanding
@@ -128,7 +131,7 @@ def get_base_context(context):
     # Recent Orders
     context.recent_orders = frappe.get_all("Sales Order", 
         filters={"customer": cust, "docstatus": 1},
-        fields=["name", "transaction_date", "total_qty", "grand_total", "status"],
+        fields=["name", "transaction_date", "grand_total", "status"],
         order_by="transaction_date desc, name desc", limit=5, ignore_permissions=True)
 
     # Unread Notifications Count

@@ -67,7 +67,7 @@
                     {% endif %}
                 </div>
             </div>
-            <a href="/payments" class="ar-btn">Pay Now</a>
+            <a href="/portal/payments" class="ar-btn">Pay Now</a>
         </div>
         {% endif %}
 
@@ -210,7 +210,7 @@
     <div class="card">
         <div class="card-header">
             <h3>Recent Orders</h3>
-            <a href="/sales-orders" class="btn-sm">View All</a>
+            <a href="/portal/sales-orders" class="btn-sm">View All</a>
         </div>
         <div style="overflow-x:auto">
             <table>
@@ -265,7 +265,7 @@
         </div>
         <div class="card-body">
             <div class="quick-actions">
-                <a href="/payments" class="qa-btn" style="border-color:var(--danger);background:var(--danger-bg)">
+                <a href="/portal/payments" class="qa-btn" style="border-color:var(--danger);background:var(--danger-bg)">
                     <div class="qa-icon">🧾</div>
                     <div class="qa-label" style="color:var(--danger)">Pay Invoice</div>
                     <div class="qa-sub" style="color:var(--danger);opacity:.8">{{ overdue_count }} overdue</div>
@@ -285,11 +285,6 @@
                     <div class="qa-label">View Ledger</div>
                     <div class="qa-sub">Statement</div>
                 </a>
-                <a href="/support" class="qa-btn">
-                    <div class="qa-icon">🎧</div>
-                    <div class="qa-label">Raise Ticket</div>
-                    <div class="qa-sub">Get support</div>
-                </a>
                 <a href="/ledger" class="qa-btn">
                     <div class="qa-icon">📄</div>
                     <div class="qa-label">Download SOA</div>
@@ -303,7 +298,7 @@
 <div class="card">
     <div class="card-header">
         <h3>Pending Invoices</h3>
-        <a href="/payments" class="btn-sm btn-accent">Pay Now</a>
+        <a href="/portal/payments" class="btn-sm btn-accent">Pay Now</a>
     </div>
     <div style="overflow-x:auto">
         <table>
@@ -322,7 +317,7 @@
                 {% if pending_invoices %}
                 {% for inv in pending_invoices %}
                 <tr>
-                    <td><a href="/invoices/{{ inv.name }}" class="link">{{ inv.name }}</a></td>
+                    <td><a href="/portal/payments?invoice={{ inv.name }}" class="link">{{ inv.name }}</a></td>
                     <td>{{ inv.po_no or '-' }}</td>
                     <td>{{ frappe.utils.formatdate(inv.posting_date) }}</td>
                     <td {% if inv.due_date and frappe.utils.date_diff(frappe.utils.nowdate(), inv.due_date)> 0
@@ -341,7 +336,7 @@
                         <span class="badge unpaid">Unpaid</span>
                         {% endif %}
                     </td>
-                    <td><a href="/payments" class="btn-sm btn-primary">Pay</a></td>
+                    <td><a href="/portal/payments" class="btn-sm btn-primary">Pay</a></td>
                 </tr>
                 {% endfor %}
                 {% else %}
