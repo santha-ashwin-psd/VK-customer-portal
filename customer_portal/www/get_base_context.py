@@ -143,7 +143,7 @@ def get_base_context(context):
 
     # All Sales Items for dropdown
     context.available_items = frappe.get_all("Item", 
-        filters={"disabled": 0, "is_sales_item": 1}, 
-        fields=["item_code", "item_name"])
+        filters={"disabled": 0, "is_sales_item": 1, "portal_item": 1}, 
+        fields=["item_code", "item_name"], order_by="item_name asc")
 
     return context

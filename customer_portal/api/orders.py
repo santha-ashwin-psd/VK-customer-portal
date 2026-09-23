@@ -21,14 +21,14 @@ import json
 @frappe.whitelist()
 def search_items(query=""):
     _get_customer() # Security check
-    filters = {"disabled": 0, "is_sales_item": 1}
+    filters = {"disabled": 0, "is_sales_item": 1, "portal_item": 1}
     if query:
         filters["item_code"] = ["like", f"%{query}%"]
         
     items = frappe.get_all("Item", filters=filters, fields=["item_code", "item_name"], limit=20)
     if query and not items:
         # Also try by item name
-        items = frappe.get_all("Item", filters={"disabled": 0, "is_sales_item": 1, "item_name": ["like", f"%{query}%"]}, fields=["item_code", "item_name"], limit=20)
+        items = frappe.get_all("Item", filters={"disabled": 0, "is_sales_item": 1, "portal_item": 1, "item_name": ["like", f"%{query}%"]}, fields=["item_code", "item_name"], limit=20)
     return items
 
 @frappe.whitelist()
